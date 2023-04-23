@@ -45,7 +45,7 @@ class Colour
   r: number = 0;
   g: number = 0;
   b: number = 0;
-  fillStyle: string = '';
+  fillStyle: string = 'rgb(0,0,0)';
   constructor(r: number, g: number, b: number)
   {
     this.r = r;
@@ -112,15 +112,12 @@ class Pocket
 class Player
 {
   index: number = 0;
-  colour: Colour|null = null;
+  colour: Colour = new Colour(0,0,0);
   colName: string = '';
   score: number = 0;
   constructor(index: number)
   {
     this.index = index;
-    this.colour = null;
-    this.colName = '';
-    this.score = 0;
   }
 }
 
@@ -240,7 +237,7 @@ class Game
 
   cueBall: Ball|null = null;
 
-  players: Array<Player> = [];
+  players: Array<Player> = [new Player(0),new Player(1)];
 
   still: boolean = false;
 
@@ -319,7 +316,7 @@ class Game
     this.buttons = [];
     this.images = [];
 
-    this.AddButtons();
+    this.AddButtons(this);
 
     this.balls.length = 0;
 
@@ -395,10 +392,10 @@ class Game
     this.turn = 0;
     this.shotEnded = 2;
 
-    this.Draw();
+    if(this.cueBall !== null) this.Draw(this.cueBall);
   }
 
-  AddButtons()
+  AddButtons(game: Game)
   {
     this.buttons = [];
     this.images = [];
@@ -418,7 +415,7 @@ class Game
     img.src = './play.svg';
     this.images.push(img);
     img.onload = function() { 
-      game.Draw();
+      if(game.cueBall !== null) game.Draw(game.cueBall);
     };
 
     button = new Button(0, 
@@ -436,14 +433,14 @@ class Game
     img.src = './undo.svg';
     this.images.push(img);
     img.onload = function() { 
-      game.Draw();
+      if(game.cueBall !== null) game.Draw(game.cueBall);
     };
 
     img = new Image();
     img.src = './home.svg';
     this.images.push(img);
     img.onload = function() { 
-      game.Draw();
+      if(game.cueBall !== null) game.Draw(game.cueBall);
     };
   }
 
@@ -619,7 +616,7 @@ class Game
     for(let i = 0; i < this.balls.length; i++) this.MovePosition(this.balls[i]);
     this.DetectCollisions();
     this.DetectEdgeCollisions();
-    this.Draw();
+    if(this.cueBall !== null) this.Draw(this.cueBall);
     if(this.shotEnded === 1) this.EndShot();
   }
 
@@ -828,7 +825,7 @@ class Game
     }
   }
 
-  Draw()
+  Draw(cueBall: Ball)
   {
     let halfBorder = this.border / 2;
     c.clearRect(0, 0, this.width + this.border, this.height + this.border);
@@ -992,25 +989,26 @@ class Game
       c.arc(cueX, cueY, this.playerMaxRange, 0, 2 * Math.PI);
       c.stroke();
       // cue stick
-      if(this.players[this.turn].colour !== null && this.players[this.turn].colour !== undefined) c.strokeStyle = this.players[this.turn].colour.fillStyle;
-      else c.strokeStyle = "rgba(" + this.colours.cueStick.r + "," + this.colours.cueStick.g + "," + this.colours.cueStick.b + ", 1)";
+      // if(this.players[this.turn].colour.fillStyle !== '') c.strokeStyle = this.players[this.turn].colour.fillStyle;
+      // else c.strokeStyle = "rgba(" + this.colours.cueStick.r + "," + this.colours.cueStick.g + "," + this.colours.cueStick.b + ", 1)";
+      c.strokeStyle = "rgba(" + this.colours.cueStick.r + "," + this.colours.cueStick.g + "," + this.colours.cueStick.b + ", 1)";
       c.lineWidth = 4 * this.scale;
   
-      let vCollision = {x: this.playerX - this.cueBall.x, y: this.playerY - this.cueBall.y};
-      let distance = Math.sqrt( (this.playerX - this.cueBall.x) * (this.playerX - this.cueBall.x) + (this.playerY - this.cueBall.y) * (this.playerY - this.cueBall.y) );
+      let vCollision = {x: this.playerX - cueBall.x, y: this.playerY - cueBall.y};
+      let distance = Math.sqrt( (this.playerX - cueBall.x) * (this.playerX - cueBall.x) + (this.playerY - cueBall.y) * (this.playerY - cueBall.y) );
       let vCollisionNorm = {x: vCollision.x / distance, y: vCollision.y / distance};
   
       c.beginPath();
-      c.moveTo(this.cueBall.x + vCollisionNorm.x * ( this.playerMinRange + c.lineWidth / 2 ), this.cueBall.y + vCollisionNorm.y * ( this.playerMinRange + c.lineWidth / 2 ));
-      c.lineTo(this.cueBall.x + vCollisionNorm.x * ( this.playerMaxRange - c.lineWidth / 2 ), this.cueBall.y + vCollisionNorm.y * ( this.playerMaxRange - c.lineWidth / 2 ));
+      c.moveTo(cueBall.x + vCollisionNorm.x * ( this.playerMinRange + c.lineWidth / 2 ), cueBall.y + vCollisionNorm.y * ( this.playerMinRange + c.lineWidth / 2 ));
+      c.lineTo(cueBall.x + vCollisionNorm.x * ( this.playerMaxRange - c.lineWidth / 2 ), cueBall.y + vCollisionNorm.y * ( this.playerMaxRange - c.lineWidth / 2 ));
       c.stroke();
   
       // cue direction
       c.lineWidth = 1 * this.scale;
       c.strokeStyle = "rgba(" + this.colours.quarterLines.r + "," + this.colours.quarterLines.g + "," + this.colours.quarterLines.b + ", 1)";
       c.beginPath();
-      c.moveTo(this.cueBall.x + -vCollisionNorm.x * ( this.playerMinRange + c.lineWidth / 2 ), this.cueBall.y + -vCollisionNorm.y * ( this.playerMinRange + c.lineWidth / 2 ));
-      c.lineTo(this.cueBall.x + -vCollisionNorm.x * ( this.guideRange - c.lineWidth / 2 ), this.cueBall.y + -vCollisionNorm.y * ( this.guideRange - c.lineWidth / 2 ));
+      c.moveTo(cueBall.x + -vCollisionNorm.x * ( this.playerMinRange + c.lineWidth / 2 ), cueBall.y + -vCollisionNorm.y * ( this.playerMinRange + c.lineWidth / 2 ));
+      c.lineTo(cueBall.x + -vCollisionNorm.x * ( this.guideRange - c.lineWidth / 2 ), cueBall.y + -vCollisionNorm.y * ( this.guideRange - c.lineWidth / 2 ));
       c.stroke();
     }
   }
@@ -1101,10 +1099,10 @@ class Game
     return false;
   }
 
-  AddPower(x: number, y: number)
+  AddPower(cueBall: Ball, x: number, y: number)
   {
     if(!this.still) return;
-    let distance = Math.sqrt((this.cueBall.x - x) * (this.cueBall.x - x) + (this.cueBall.y - y) * (this.cueBall.y - y));
+    let distance = Math.sqrt((cueBall.x - x) * (cueBall.x - x) + (cueBall.y - y) * (cueBall.y - y));
     if(distance <= this.playerMaxRange) this.power = true;
   }
 
@@ -1185,11 +1183,6 @@ class Game
 
     }
   }
-
-  Home()
-  {
-    window.open("/", "_self");
-  }
 }
 
 const gameDiv: HTMLElement = <HTMLElement>document.getElementById("gameDiv");
@@ -1230,7 +1223,7 @@ gameCanvas.onmousedown = function(event)
       let y = event.clientY - rect.top;
       if(!game.CheckButton(x, y))
       {
-        game.AddPower(x, y);
+        if(game.cueBall !== null) game.AddPower(game.cueBall, x, y);
       }
     }
     if(event.button === 2)
